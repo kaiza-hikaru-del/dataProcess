@@ -60,8 +60,9 @@ def process_sample(sample_dir: Path) -> None:  # 修改参数类型为 Path
 def sobel_sharpness(image: np.ndarray) -> float:
     """基于Sobel算子的清晰度计算"""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-    sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+    filtered = cv2.medianBlur(gray, ksize=7)
+    sobel_x = cv2.Sobel(filtered, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(filtered, cv2.CV_64F, 0, 1, ksize=3)
     return np.mean(np.sqrt(sobel_x**2 + sobel_y**2))
 
 def dof_calculate(l: float, n: float, NA: float, m: float, e: float) -> float:
@@ -208,13 +209,13 @@ def main(dataset_root: Path, step: int = 0) -> None:
     # Step 1: 并行处理所有sample
     if step == 1 or step == 0:
         samples = list(dataset_root.glob("*/sample*"))  # 直接使用 Path
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
             executor.map(process_sample, samples)
     
     # Step 2: 处理更深层级的 field
     if step == 2 or step == 0:
         fields = list(dataset_root.glob("*/sample*/field*"))  # 修正路径层级
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=8) as executor:
             executor.map(process_field, fields)
     
     # Step 3: 处理所有类别
@@ -235,6 +236,6 @@ if __name__ == "__main__":
     dataset_path = Path(args.dataset)
     # 创建必要目录
     [ (dataset_path / subdir).mkdir(exist_ok=True) 
-     for subdir in (".info", ".curve", ".infocus", ".train", ".val", ".test") ]
+      for subdir in (".info", ".curve", ".infocus", ".train", ".val", ".test", ".exclude") ]
     
     main(dataset_path, args.step)
