@@ -109,7 +109,7 @@ def process_field(field_dir: Path, step_size: float = 0) -> None:  # 修改参�
         
         # 生成CSV数据
         data = {
-            "image_path": [str(f.relative_to(field_dir.parent.parent.parent)) for f in img_files],
+            "image_path": [f.relative_to(field_dir.parent.parent.parent).as_posix() for f in img_files],
             "sobel_sharpness": sharpness_values,
             "defocus_label": [(o - max_order) * step_size for o in orders],
             "magnification": magnification,
